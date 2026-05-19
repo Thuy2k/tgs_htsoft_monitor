@@ -64,18 +64,30 @@ add_action('tgs_shop_report_menu', function (string $current_view): void {
  * @param array  $extra
  */
 add_action('tgs_pos_order_committed', function ($sale_ledger_id, $sale_code, $payload, $extra) {
-    // Chỉ log khi là HTSoft import
-    if (empty($_POST['is_htsoft_import'])) {
+    // Đọc HTSoft data từ $extra (QR/deferred commit) hoặc $_POST (cash/transfer trực tiếp)
+    $htsoft = $extra['htsoft'] ?? null;
+    $is_htsoft = !empty($htsoft) || !empty($_POST['is_htsoft_import']);
+    if (!$is_htsoft) {
         return;
     }
 
-    // Decode JSON fields từ POST (sanitize tối thiểu — đây là data do chính FE của mình gửi lên)
-    $invoice_images   = json_decode(stripslashes($_POST['htsoft_invoice_images']   ?? '[]'), true) ?: [];
-    $map_result       = json_decode(stripslashes($_POST['htsoft_map_result']        ?? '[]'), true) ?: [];
-    $price_diff_items = json_decode(stripslashes($_POST['htsoft_price_diff_items']  ?? '[]'), true) ?: [];
-    $unmatched_skus   = json_decode(stripslashes($_POST['htsoft_unmatched_skus']    ?? '[]'), true) ?: [];
-    $selected_items   = json_decode(stripslashes($_POST['htsoft_selected_items']    ?? '[]'), true) ?: [];
-    $invoice_no       = sanitize_text_field($_POST['htsoft_invoice_no'] ?? '');
+    if ($htsoft) {
+        // Deferred commit qua WC gateway (VietinBank, v.v.): data được lưu trong $sale_args → $extra
+        $invoice_images   = json_decode(stripslashes($htsoft['invoice_images']   ?? '[]'), true) ?: [];
+        $map_result       = json_decode(stripslashes($htsoft['map_result']        ?? '[]'), true) ?: [];
+        $price_diff_items = json_decode(stripslashes($htsoft['price_diff_items']  ?? '[]'), true) ?: [];
+        $unmatched_skus   = json_decode(stripslashes($htsoft['unmatched_skus']    ?? '[]'), true) ?: [];
+        $selected_items   = json_decode(stripslashes($htsoft['selected_items']    ?? '[]'), true) ?: [];
+        $invoice_no       = sanitize_text_field($htsoft['invoice_no'] ?? '');
+    } else {
+        // Commit trực tiếp (tiền mặt / chuyển khoản không qua WC gateway): đọc từ $_POST
+        $invoice_images   = json_decode(stripslashes($_POST['htsoft_invoice_images']   ?? '[]'), true) ?: [];
+        $map_result       = json_decode(stripslashes($_POST['htsoft_map_result']        ?? '[]'), true) ?: [];
+        $price_diff_items = json_decode(stripslashes($_POST['htsoft_price_diff_items']  ?? '[]'), true) ?: [];
+        $unmatched_skus   = json_decode(stripslashes($_POST['htsoft_unmatched_skus']    ?? '[]'), true) ?: [];
+        $selected_items   = json_decode(stripslashes($_POST['htsoft_selected_items']    ?? '[]'), true) ?: [];
+        $invoice_no       = sanitize_text_field($_POST['htsoft_invoice_no'] ?? '');
+    }
 
     $insert_id = TGS_HTSoft_Monitor_DB::insert([
         'blog_id'           => get_current_blog_id(),
