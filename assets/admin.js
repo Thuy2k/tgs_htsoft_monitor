@@ -25,10 +25,14 @@ jQuery(function ($) {
     function tryPopulateBlogs(data) {
         if (!data || !data.blogs) return;
         var $sel = $('#filter-blog');
-        if ($sel.find('option').length > 1) return; // already populated
+        if ($sel.find('option').length > 0) return; // already populated
         data.blogs.forEach(function (b) {
             $sel.append($('<option>').val(b.id).text(b.name + ' (#' + b.id + ')'));
         });
+        // Pre-select shop hiện tại
+        if (data.blogId) {
+            $sel.val(data.blogId);
+        }
     }
 
     // Populate immediately from page config (no need to wait for first AJAX call)
@@ -50,11 +54,12 @@ jQuery(function ($) {
 
     function loadStats() {
         var statMap = { pending: '#stat-pending', resolved: '#stat-resolved' };
+        var blogId = $('#filter-blog').val() || cfg.blogId;
 
         Object.keys(statMap).forEach(function (s) {
             $.post(ajaxUrl, {
                 action: 'tgs_htsoft_monitor_get_logs', nonce: nonce,
-                resolution_status: s, per_page: 1, page: 1
+                blog_id: blogId, resolution_status: s, per_page: 1, page: 1
             }, function (r) {
                 if (r.success) $(statMap[s]).text(Number(r.data.total).toLocaleString('vi-VN'));
             });
@@ -62,14 +67,14 @@ jQuery(function ($) {
 
         $.post(ajaxUrl, {
             action: 'tgs_htsoft_monitor_get_logs', nonce: nonce,
-            has_price_diff: 1, per_page: 1, page: 1
+            blog_id: blogId, has_price_diff: 1, per_page: 1, page: 1
         }, function (r) {
             if (r.success) $('#stat-price-diff').text(Number(r.data.total).toLocaleString('vi-VN'));
         });
 
         $.post(ajaxUrl, {
             action: 'tgs_htsoft_monitor_get_logs', nonce: nonce,
-            has_unmatched: 1, per_page: 1, page: 1
+            blog_id: blogId, has_unmatched: 1, per_page: 1, page: 1
         }, function (r) {
             if (r.success) $('#stat-unmatched').text(Number(r.data.total).toLocaleString('vi-VN'));
         });
@@ -411,7 +416,8 @@ jQuery(function ($) {
     $('#btn-refresh').on('click', function () { currentPage = 1; loadLogs(); loadStats(); });
 
     $('#btn-reset').on('click', function () {
-        $('#filter-blog, #filter-status').val('');
+        $('#filter-blog').val(cfg.blogId || '');
+        $('#filter-status').val('');
         $('#filter-price-diff, #filter-unmatched').prop('checked', false);
         $('#filter-date-from, #filter-date-to').val('');
         currentPage = 1;

@@ -17,9 +17,9 @@ class TGS_HTSoft_Monitor_DB
     public static function table(): string
     {
         global $wpdb;
-        // Dùng base_prefix để bảng luôn thuộc main site (wp_local_htsoft_import_log)
-        // không phụ thuộc blog context đang active trên multisite.
-        return $wpdb->base_prefix . 'local_htsoft_import_log';
+        // Dùng $wpdb->prefix để mỗi blog (shop) ghi vào bảng của chính nó.
+        // Ví dụ: blog 7 → DEGIP_7_local_htsoft_import_log
+        return $wpdb->prefix . 'local_htsoft_import_log';
     }
 
     /**

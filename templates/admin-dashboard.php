@@ -65,7 +65,6 @@ $_blogs    = TGS_HTSoft_Monitor_Admin::get_all_blogs_list();
                 <div class="col-sm-6 col-md-2">
                     <label class="form-label small fw-semibold mb-1">Shop</label>
                     <select id="filter-blog" class="form-select form-select-sm">
-                        <option value="">Tất cả shop</option>
                     </select>
                 </div>
                 <div class="col-sm-6 col-md-2">

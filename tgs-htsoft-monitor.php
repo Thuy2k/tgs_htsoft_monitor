@@ -77,7 +77,7 @@ add_action('tgs_pos_order_committed', function ($sale_ledger_id, $sale_code, $pa
     $selected_items   = json_decode(stripslashes($_POST['htsoft_selected_items']    ?? '[]'), true) ?: [];
     $invoice_no       = sanitize_text_field($_POST['htsoft_invoice_no'] ?? '');
 
-    TGS_HTSoft_Monitor_DB::insert([
+    $insert_id = TGS_HTSoft_Monitor_DB::insert([
         'blog_id'           => get_current_blog_id(),
         'sale_id'           => intval($sale_ledger_id),
         'sale_code'         => $sale_code,
@@ -90,4 +90,12 @@ add_action('tgs_pos_order_committed', function ($sale_ledger_id, $sale_code, $pa
         'selected_items'    => $selected_items,
         'user_id'           => get_current_user_id(),
     ]);
+
+    if (!$insert_id) {
+        global $wpdb;
+        error_log('[TGS HTSoft Monitor] insert FAILED — sale_code=' . $sale_code
+            . ' blog=' . get_current_blog_id()
+            . ' table=' . TGS_HTSoft_Monitor_DB::table()
+            . ' db_error=' . $wpdb->last_error);
+    }
 }, 10, 4);
