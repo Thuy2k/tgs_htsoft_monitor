@@ -1,0 +1,93 @@
+<?php
+/**
+ * Plugin Name: TGS HTSoft Monitor
+ * Plugin URI:  https://tgs.vn
+ * Description: Theo dõi log import hóa đơn HTSoft — cảnh báo lệch giá, SKU thiếu, ảnh bill, trạng thái xử lý.
+ * Version:     1.0.0
+ * Author:      TGS Dev
+ * Text Domain: tgs-htsoft-monitor
+ * Network:     false
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+define('TGS_HTSOFT_MONITOR_VERSION', '1.0.0');
+define('TGS_HTSOFT_MONITOR_DIR',     plugin_dir_path(__FILE__));
+define('TGS_HTSOFT_MONITOR_URL',     plugin_dir_url(__FILE__));
+
+// Auto-load includes
+require_once TGS_HTSOFT_MONITOR_DIR . 'includes/class-htsoft-monitor-db.php';
+require_once TGS_HTSOFT_MONITOR_DIR . 'includes/class-htsoft-monitor-ajax.php';
+require_once TGS_HTSOFT_MONITOR_DIR . 'includes/class-htsoft-monitor-admin.php';
+
+// Boot
+add_action('plugins_loaded', function () {
+    TGS_HTSoft_Monitor_Admin::init();
+    TGS_HTSoft_Monitor_Ajax::init();
+});
+
+// ─── Tích hợp vào TGS Shop Admin ─────────────────────────────────────────────
+
+/**
+ * Đăng ký route htsoft-monitor vào TGS Shop dashboard router.
+ * Khi user truy cập ?page=tgs-shop-management&view=htsoft-monitor,
+ * router sẽ load template của plugin này qua absolute path.
+ */
+add_filter('tgs_shop_dashboard_routes', function (array $routes): array {
+    $routes['htsoft-monitor'] = [
+        'HTSoft Monitor',
+        TGS_HTSOFT_MONITOR_DIR . 'templates/admin-dashboard.php',
+    ];
+    return $routes;
+});
+
+/**
+ * Thêm nav item vào section "Báo cáo mở rộng" trong TGS Shop mega-nav.
+ *
+ * @param string $current_view View slug đang active
+ */
+add_action('tgs_shop_report_menu', function (string $current_view): void {
+    $active = ($current_view === 'htsoft-monitor') ? 'active' : '';
+    $url    = esc_url(admin_url('admin.php?page=tgs-shop-management&view=htsoft-monitor'));
+    echo '<li><a href="' . $url . '" class="' . esc_attr($active) . '"><i class="bx bx-error-alt"></i>HTSoft Monitor</a></li>';
+});
+
+/**
+ * Lắng nghe hook tgs_pos_order_committed (bắn sau khi đơn POS được commit thành công).
+ * Nếu đơn có is_htsoft_import=1 thì ghi log vào local_htsoft_import_log.
+ *
+ * @param int    $sale_ledger_id
+ * @param string $sale_code
+ * @param array  $payload
+ * @param array  $extra
+ */
+add_action('tgs_pos_order_committed', function ($sale_ledger_id, $sale_code, $payload, $extra) {
+    // Chỉ log khi là HTSoft import
+    if (empty($_POST['is_htsoft_import'])) {
+        return;
+    }
+
+    // Decode JSON fields từ POST (sanitize tối thiểu — đây là data do chính FE của mình gửi lên)
+    $invoice_images   = json_decode(stripslashes($_POST['htsoft_invoice_images']   ?? '[]'), true) ?: [];
+    $map_result       = json_decode(stripslashes($_POST['htsoft_map_result']        ?? '[]'), true) ?: [];
+    $price_diff_items = json_decode(stripslashes($_POST['htsoft_price_diff_items']  ?? '[]'), true) ?: [];
+    $unmatched_skus   = json_decode(stripslashes($_POST['htsoft_unmatched_skus']    ?? '[]'), true) ?: [];
+    $selected_items   = json_decode(stripslashes($_POST['htsoft_selected_items']    ?? '[]'), true) ?: [];
+    $invoice_no       = sanitize_text_field($_POST['htsoft_invoice_no'] ?? '');
+
+    TGS_HTSoft_Monitor_DB::insert([
+        'blog_id'           => get_current_blog_id(),
+        'sale_id'           => intval($sale_ledger_id),
+        'sale_code'         => $sale_code,
+        'htsoft_invoice_no' => $invoice_no,
+        'invoice_images'    => $invoice_images,
+        'raw_ai_result'     => null,          // full AI result không cần thiết trong log
+        'map_result'        => $map_result,
+        'price_diff_items'  => $price_diff_items,
+        'unmatched_skus'    => $unmatched_skus,
+        'selected_items'    => $selected_items,
+        'user_id'           => get_current_user_id(),
+    ]);
+}, 10, 4);

@@ -1,0 +1,22 @@
+/* ─────────────────────────────────────────────
+   TGS HTSoft Monitor — Custom overrides
+   (Bootstrap 5 + Sneat are provided by TGS Shop)
+   ───────────────────────────────────────────── */
+
+/* Ensure the app fills the TGS Shop content area */
+#tgs-htsoft-monitor-app {
+    max-width: 100%;
+}
+
+/* Make action icon-buttons compact */
+.btn-xs {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+/* Modal resolve section shown as a flat footer panel */
+#tgshm-resolve-section {
+    background: #f8f8fb;
+    border-top: 1px solid var(--bs-border-color);
+}
