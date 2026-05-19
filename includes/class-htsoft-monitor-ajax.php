@@ -213,12 +213,18 @@ class TGS_HTSoft_Monitor_Ajax
         }
 
         // Thư mục: wp-content/uploads/htsoft-invoices/{blog_id}/{YYYY-MM-DD}/
-        $upload  = wp_upload_dir();
-        $rel_dir = 'htsoft-invoices/' . $blog_id . '/' . gmdate('Y-m-d');
-        $abs_dir = trailingslashit($upload['basedir']) . $rel_dir;
+        // Luôn dùng thư mục uploads của main site (WP_CONTENT_DIR/uploads)
+        // để tránh lỗi multisite khi wp_upload_dir() trả về sites/N/ chưa tồn tại.
+        $upload_base_dir = WP_CONTENT_DIR . '/uploads';
+        $upload_base_url = content_url('uploads');
+        $rel_dir         = 'htsoft-invoices/' . $blog_id . '/' . gmdate('Y-m-d');
+        $abs_dir         = $upload_base_dir . '/' . $rel_dir;
 
         if (!wp_mkdir_p($abs_dir)) {
-            wp_send_json_error(['message' => 'Không tạo được thư mục upload.'], 500);
+            wp_send_json_error([
+                'message' => 'Không tạo được thư mục upload: ' . $abs_dir
+                    . ' (uploads writable: ' . (is_writable($upload_base_dir) ? 'yes' : 'no') . ')',
+            ], 500);
         }
 
         $filename = wp_unique_filename($abs_dir, sanitize_file_name($file['name']));
@@ -229,7 +235,7 @@ class TGS_HTSoft_Monitor_Ajax
         }
 
         wp_send_json_success([
-            'url'      => trailingslashit($upload['baseurl']) . $rel_dir . '/' . $filename,
+            'url'      => $upload_base_url . '/' . $rel_dir . '/' . $filename,
             'filename' => $filename,
         ]);
     }
