@@ -285,7 +285,7 @@ jQuery(function ($) {
                 html += '<div class="table-responsive">';
                 html += '<table class="table table-sm table-bordered table-striped small mb-0">';
                 html += '<thead class="table-light"><tr><th>SKU</th><th>Tên SP</th>' +
-                    '<th class="text-end">Giá HTSoft</th><th class="text-end">Giá DB</th>' +
+                    '<th class="text-end">Giá bán/hóa đơn</th><th class="text-end">Giá DB lúc đó</th>' +
                     '<th class="text-end">Chênh lệch</th></tr></thead><tbody>';
                 d.price_diff_items.forEach(function (it) {
                     var diff = parseFloat(it.invoice_price || 0) - parseFloat(it.db_price || 0);
