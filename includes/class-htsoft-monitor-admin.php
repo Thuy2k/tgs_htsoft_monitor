@@ -14,7 +14,9 @@ class TGS_HTSoft_Monitor_Admin
 
     public static function init(): void
     {
-        add_action('admin_menu',    [self::class, 'register_menu']);
+        // [ẨN MENU - 2026-06-02] Bỏ submenu "HTSoft Monitor" trong sidebar WP Admin theo yêu cầu;
+        // trang vẫn render được khi truy cập trực tiếp qua header-mega-nav (view=htsoft-monitor).
+        // add_action('admin_menu',    [self::class, 'register_menu']);
         add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
     }
 
