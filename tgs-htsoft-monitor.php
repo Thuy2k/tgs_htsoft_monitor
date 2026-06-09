@@ -18,6 +18,7 @@ define('TGS_HTSOFT_MONITOR_DIR',     plugin_dir_path(__FILE__));
 define('TGS_HTSOFT_MONITOR_URL',     plugin_dir_url(__FILE__));
 
 // Auto-load includes
+require_once TGS_HTSOFT_MONITOR_DIR . 'includes/class-htsoft-monitor-global-products.php';
 require_once TGS_HTSOFT_MONITOR_DIR . 'includes/class-htsoft-monitor-db.php';
 require_once TGS_HTSOFT_MONITOR_DIR . 'includes/class-htsoft-monitor-ajax.php';
 require_once TGS_HTSOFT_MONITOR_DIR . 'includes/class-htsoft-monitor-admin.php';
@@ -89,7 +90,7 @@ add_action('tgs_pos_order_committed', function ($sale_ledger_id, $sale_code, $pa
         $invoice_no       = sanitize_text_field($_POST['htsoft_invoice_no'] ?? '');
     }
 
-    $insert_id = TGS_HTSoft_Monitor_DB::insert([
+    $log_payload = TGS_HTSoft_Monitor_Global_Products::normalize_log_payload([
         'blog_id'           => get_current_blog_id(),
         'sale_id'           => intval($sale_ledger_id),
         'sale_code'         => $sale_code,
@@ -102,6 +103,8 @@ add_action('tgs_pos_order_committed', function ($sale_ledger_id, $sale_code, $pa
         'selected_items'    => $selected_items,
         'user_id'           => get_current_user_id(),
     ]);
+
+    $insert_id = TGS_HTSoft_Monitor_DB::insert($log_payload);
 
     if (!$insert_id) {
         global $wpdb;

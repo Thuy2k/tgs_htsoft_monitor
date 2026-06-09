@@ -142,6 +142,15 @@ class TGS_HTSoft_Monitor_Ajax
             }
         }
 
+        $normalized = TGS_HTSoft_Monitor_Global_Products::normalize_log_payload([
+            'price_diff_items' => is_array($row->price_diff_items) ? $row->price_diff_items : [],
+            'selected_items' => is_array($row->selected_items) ? $row->selected_items : [],
+            'map_result' => is_array($row->map_result) ? $row->map_result : [],
+        ]);
+        $row->price_diff_items = $normalized['price_diff_items'];
+        $row->selected_items = $normalized['selected_items'];
+        $row->map_result = $normalized['map_result'];
+
         wp_send_json_success($row);
     }
 
